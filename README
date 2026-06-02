@@ -1,0 +1,35 @@
+# ConsultaTEC 🤖🎙️
+
+ConsultaTEC es una aplicación móvil de chatbot institucional diseñada en **React Native** utilizando **Expo**. Este proyecto sirve como prototipo de tesis para la automatización de consultas estudiantiles, integrando respuestas locales rápidas, procesamiento avanzado con la inteligencia artificial de **Google Gemini**, reconocimiento de voz nativo y un sistema de temas adaptable (Modo Claro/Oscuro).
+
+---
+
+## ✨ Características Principales
+
+* **Procesamiento Híbrido de Consultas:** Filtra las preguntas comunes mediante una base de datos local rápida (`⚡️`) antes de escalar consultas complejas a la nube (`☁️`).
+* **Inteligencia Artificial Avanzada:** Integración directa con el modelo `gemini-1.5-flash` de Google para comprender el contexto de ciclos y cursos institucionales.
+* **Reconocimiento de Voz Nativo:** Permite a los estudiantes interactuar usando la voz gracias a la integración de `@react-native-voice/voice`.
+* **Interfaz Dinámica (Modo Claro/Oscuro):** Estilos modernos con sombras, bordes redondeados y cambio de tema automático según las preferencias del sistema operativo del dispositivo.
+* **Gestión de Entorno Segura:** Implementación moderna de variables de entorno mediante el estándar nativo de Expo (`EXPO_PUBLIC_`).
+
+---
+
+## 🛠️ Requisitos Previos
+
+Antes de comenzar, asegúrate de tener instalado lo siguiente en tu entorno de desarrollo:
+
+* **Node.js** (Versión LTS recomendada)
+* **npm** o **yarn**
+* **Expo CLI** de forma global o mediante `npx`
+* **Android Studio** (con un emulador configurado) o **Xcode** (para entornos macOS/iOS)
+
+---
+
+## 🚀 Instalación y Configuración
+
+Sigue estos pasos para clonar el repositorio e instalar el proyecto desde cero:
+
+### 1. Clonar el repositorio e instalar dependencias
+```bash
+# Instala las dependencias del proyecto
+npm install
