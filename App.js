@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -13,15 +13,26 @@ import {
   useColorScheme,
   PermissionsAndroid,
 } from 'react-native';
+
+import Markdown from 'react-native-markdown-display';
+import { LinearGradient } from 'expo-linear-gradient';
 import Voice from '@react-native-voice/voice';
-import getThemedStyles, { lightColors, darkColors } from './styles';
+
+import getThemedStyles, {
+  lightColors,
+  darkColors,
+} from './styles';
+
 import { preguntarGemini } from './geminiService';
-import { ciclos, responderPregunta } from './botData';
 
 export default function App() {
   const systemColorScheme = useColorScheme();
-  const [isDarkMode, setIsDarkMode] = useState(systemColorScheme === 'dark');
+  const [isDarkMode, setIsDarkMode] = useState(
+    systemColorScheme === 'dark'
+  );
+
   const styles = getThemedStyles(isDarkMode);
+  const scrollRef = useRef(null);
 
   const [mensaje, setMensaje] = useState('');
   const [conversacion, setConversacion] = useState([]);
@@ -29,19 +40,21 @@ export default function App() {
   const [cargando, setCargando] = useState(false);
 
   useEffect(() => {
-    const subscription = Appearance.addChangeListener(({ colorScheme }) => {
-      setIsDarkMode(colorScheme === 'dark');
-    });
+    const subscription = Appearance.addChangeListener(
+      ({ colorScheme }) => {
+        setIsDarkMode(colorScheme === 'dark');
+      }
+    );
 
     Voice.onSpeechResults = (result) => {
-      if (result.value && result.value.length > 0) {
+      if (result.value?.length > 0) {
         setMensaje(result.value[0]);
       }
       setGrabando(false);
     };
 
     Voice.onSpeechError = (e) => {
-      console.error('Error de voz:', e);
+      console.log(e);
       setGrabando(false);
     };
 
@@ -53,36 +66,30 @@ export default function App() {
 
   const solicitarPermisoMicrofono = async () => {
     if (Platform.OS === 'android') {
-      try {
-        const concedido = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
-          {
-            title: 'Permiso de Micrófono',
-            message: 'ConsultaTEC necesita acceso a tu micrófono para transcribir tu voz.',
-            buttonPositive: 'Aceptar',
-          }
+      const granted =
+        await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.RECORD_AUDIO
         );
-        return concedido === PermissionsAndroid.RESULTS.GRANTED;
-      } catch (err) {
-        console.warn(err);
-        return false;
-      }
+
+      return (
+        granted ===
+        PermissionsAndroid.RESULTS.GRANTED
+      );
     }
-    return true; 
+    return true;
   };
 
   const comenzarGrabacion = async () => {
-    const tienePermiso = await solicitarPermisoMicrofono();
-    if (!tienePermiso) {
-      alert('No se puede grabar sin permisos de micrófono.');
-      return;
-    }
+    const permitido =
+      await solicitarPermisoMicrofono();
+
+    if (!permitido) return;
+
     try {
       setGrabando(true);
-      setMensaje('');
       await Voice.start('es-ES');
-    } catch (e) {
-      console.error('Error al iniciar grabación', e);
+    } catch (error) {
+      console.log(error);
       setGrabando(false);
     }
   };
@@ -90,74 +97,182 @@ export default function App() {
   const detenerGrabacion = async () => {
     try {
       await Voice.stop();
-    } catch (e) {
-      console.error('Error al detener grabación', e);
+    } catch (error) {
+      console.log(error);
     }
   };
 
+  // 🌟 FUNCIÓN CORREGIDA Y LIMPIA PARA TU TESIS
   const manejarEnvio = async () => {
-    if (mensaje.trim() === '') return;
+    if (!mensaje.trim()) return;
 
     const mensajeUsuario = mensaje;
     setMensaje('');
+
+    // Agregar mensaje del alumno al chat
+    setConversacion((prev) => [
+      ...prev,
+      {
+        tipo: 'usuario',
+        texto: mensajeUsuario,
+        hora: new Date().toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+      },
+    ]);
+
     setCargando(true);
 
-    // Agregar mensaje del usuario inmediatamente al chat
-    setConversacion(prev => [...prev, { tipo: 'usuario', texto: mensajeUsuario }]);
+    try {
+      // Conecta directo con Gemini pasándole la pregunta pura
+      const respuesta = await preguntarGemini(mensajeUsuario);
 
-    const respuestaLocal = responderPregunta(mensajeUsuario);
-
-    if (respuestaLocal) {
-      setConversacion(prev => [...prev, { tipo: 'bot', texto: `⚡️ ${respuestaLocal}` }]);
-    } else {
-      const contexto = `Actúa como el bot institucional de ConsultaTEC. Estos son los ciclos y cursos disponibles:\n${JSON.stringify(ciclos, null, 2)}\n\nPregunta del estudiante: ${mensajeUsuario}`;
-      const respuestaGemini = await preguntarGemini(contexto);
-      setConversacion(prev => [...prev, { tipo: 'bot', texto: `☁️ ${respuestaGemini}` }]);
+      // Agregar la respuesta concisa de la IA al chat
+      setConversacion((prev) => [
+        ...prev,
+        {
+          tipo: 'bot',
+          texto: respuesta,
+          hora: new Date().toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+        },
+      ]);
+    } catch (error) {
+      console.error("Error al obtener respuesta de Gemini:", error);
     }
+
     setCargando(false);
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: styles.container.backgroundColor }}>
+    <SafeAreaView
+      style={{
+        flex: 1,
+        backgroundColor:
+          styles.container.backgroundColor,
+      }}
+    >
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={
+          Platform.OS === 'ios'
+            ? 'padding'
+            : undefined
+        }
       >
         <View style={styles.container}>
-          <View style={styles.navbar}>
-            <Text style={styles.navTitle}>ConsultaTEC</Text>
-            <TouchableOpacity onPress={() => setConversacion([])} style={styles.navButton}>
-              <Text style={styles.navButtonText}>Nuevo chat</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setIsDarkMode(!isDarkMode)} style={styles.navButton}>
-              <Text style={styles.navButtonText}>{isDarkMode ? '🌞 Claro' : '🌙 Oscuro'}</Text>
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView style={styles.chat}>
-            {conversacion.map((msg, index) => (
-              <View key={index} style={msg.tipo === 'usuario' ? styles.userBubble : styles.botBubble}>
-                <Text style={styles.bubbleText}>
-                  {msg.tipo === 'usuario' ? 'Tú: ' : 'Bot: '}
-                  {msg.texto}
+          <LinearGradient
+            colors={
+              isDarkMode
+                ? ['#4B0082', '#6A0DAD']
+                : ['#007BFF', '#00BFFF']
+            }
+            style={styles.headerGradient}
+          >
+            <View style={styles.headerRow}>
+              <View>
+                <Text style={styles.headerTitle}>
+                  🎓 ConsultaTEC
+                </Text>
+                <Text style={styles.headerSubtitle}>
+                  Asistente Académico
                 </Text>
               </View>
+
+              <View style={styles.headerButtons}>
+                <TouchableOpacity
+                  style={styles.iconButton}
+                  onPress={() => setConversacion([])}
+                >
+                  <Text>🗑️</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.iconButton}
+                  onPress={() => setIsDarkMode(!isDarkMode)}
+                >
+                  <Text>{isDarkMode ? '🌞' : '🌙'}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </LinearGradient>
+
+          <ScrollView
+            ref={scrollRef}
+            style={styles.chat}
+            onContentSizeChange={() =>
+              scrollRef.current?.scrollToEnd({
+                animated: true,
+              })
+            }
+          >
+            {conversacion.length === 0 && (
+              <View style={styles.welcomeContainer}>
+                <Text style={styles.robotEmoji}>🤖</Text>
+                <Text style={styles.welcomeTitle}>Bienvenido</Text>
+                <Text style={styles.welcomeText}>
+                  Pregunta sobre cursos, tecnologías y ciclos.
+                </Text>
+
+                <TouchableOpacity
+                  style={styles.quickButton}
+                  onPress={() => setMensaje('¿Qué enseñan en el 3er ciclo?')}
+                >
+                  <Text style={styles.quickButtonText}>📚 3er ciclo</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {conversacion.map((msg, index) => (
+              <View
+                key={index}
+                style={
+                  msg.tipo === 'usuario'
+                    ? styles.userBubble
+                    : styles.botBubble
+                }
+              >
+                <Markdown
+                  style={{
+                    body: {
+                      color: isDarkMode ? '#fff' : '#000',
+                      fontSize: 15,
+                    },
+                  }}
+                >
+                  {msg.texto}
+                </Markdown>
+
+                <Text style={styles.messageTime}>{msg.hora}</Text>
+              </View>
             ))}
-            {cargando && <Text style={styles.thinkingText}>💬 Pensando...</Text>}
+
+            {cargando && (
+              <Text style={styles.thinkingText}>💬 Pensando...</Text>
+            )}
           </ScrollView>
 
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
-              placeholder="Escribe tu pregunta..."
-              placeholderTextColor={isDarkMode ? darkColors.inputPlaceholder : lightColors.inputPlaceholder}
+              placeholder="Pregunta algo..."
+              placeholderTextColor={
+                isDarkMode
+                  ? darkColors.inputPlaceholder
+                  : lightColors.inputPlaceholder
+              }
               value={mensaje}
               onChangeText={setMensaje}
             />
+
             <Button title="Enviar" onPress={manejarEnvio} />
+
             <TouchableOpacity
-              onPress={grabando ? detenerGrabacion : comenzarGrabacion}
               style={styles.micButton}
+              onPress={grabando ? detenerGrabacion : comenzarGrabacion}
             >
               <Text style={styles.micButtonText}>
                 {grabando ? '⏹️' : '🎤'}

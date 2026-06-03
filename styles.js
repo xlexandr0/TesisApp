@@ -130,6 +130,81 @@ export default (isDarkMode) => {
       padding: 10,
       color: colors.thinkingText,
       alignSelf: 'center',
-    }
+    },
+    headerGradient: {
+  borderRadius: 20,
+  padding: 15,
+  marginBottom: 15,
+},
+
+headerRow: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+},
+
+headerTitle: {
+  color: '#fff',
+  fontSize: 24,
+  fontWeight: 'bold',
+},
+
+headerSubtitle: {
+  color: '#fff',
+  opacity: 0.8,
+},
+
+headerButtons: {
+  flexDirection: 'row',
+},
+
+iconButton: {
+  backgroundColor: 'rgba(255,255,255,0.2)',
+  padding: 10,
+  borderRadius: 15,
+  marginLeft: 10,
+},
+
+welcomeContainer: {
+  alignItems: 'center',
+  marginTop: 50,
+  marginBottom: 30,
+},
+
+robotEmoji: {
+  fontSize: 70,
+},
+
+welcomeTitle: {
+  fontSize: 24,
+  fontWeight: 'bold',
+  marginTop: 10,
+},
+
+welcomeText: {
+  textAlign: 'center',
+  marginTop: 10,
+  color: '#888',
+},
+
+quickButton: {
+  marginTop: 20,
+  backgroundColor: '#007BFF',
+  paddingHorizontal: 20,
+  paddingVertical: 10,
+  borderRadius: 20,
+},
+
+quickButtonText: {
+  color: '#fff',
+  fontWeight: 'bold',
+},
+
+messageTime: {
+  fontSize: 10,
+  opacity: 0.6,
+  marginTop: 5,
+},
+    
   });
 };
